@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>
+			Posts
+		</title>
+
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<!-- Included Bootstrap and jQuery scripts and css. -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+	</head>
+
+	<body>
+		<!--
+			Button "Post": To add new post to the initial list.
+			Post Form:
+				Button "Submit": Fill title, body and click on "Submit" to add new post to the list.
+				Button "Close" : To hide the form and display posts list without adding new post to the list.
+		-->
+		<div class="container" id="PostFormDiv">
+			<button type="button" class="btn btn-success" onclick="fnShowPostForm();" style="margin-left:-15px;">Post</button>
+
+			<div class="row" id="FormDiv" style="display:none;">
+				<form action="javascript:;" onsubmit="fnPostData(this);">
+					<input type="hidden" name="userId" value="1"/>
+					<div class="form-group">
+						<label for="title">Title</label>
+						<input type="text" class="form-control" id="title" name="title">
+					</div>
+					<div class="form-group">
+						<label for="body">Body</label>
+						<input type="text" class="form-control" id="body" name="body">
+					</div>
+
+					<button type="submit" class="btn btn-info" style="margin-right:5px;">Submit</button>
+					<button type="button" class="btn btn-info" onclick="fnClosePostForm();">Close</button>
+				</form>
+			</div>
+		</div>
+
+		<!--
+			Posts List:
+				Table "PostsList" : Table to display the list of posts.
+				Div   "Summary"   : To display the start index and offset of posts. Eg: Showing 10 posts from 0
+				Button"Next"      : To display next 10 posts in the list.
+				Button"Previous"  : To display previous 10 posts in the list.
+		-->
+		<div class="container" id="PostsListDiv">
+			<div class="row">
+				<table id="PostsList" class="table table-striped">
+					<thead>
+						<tr>
+							<th>U.ID</th>
+							<th>ID</th>
+							<th>Title</th>
+							<th>Body</th>
+						</tr>
+					</thead>
+					<tbody>
+					</tbody>
+				</table>
+			</div>
+			<div class="row">
+				<div class="col-sm-6" id="Summary" style="margin-left:-15px;"></div>
+				<div class="col-sm-6">
+					<button type="button" class="btn btn-primary" style="width:80px;float:right;" onclick="fnGetNextPosts();">Next</button>
+					<button type="button" class="btn btn-primary" style="width:80px;float:right;margin-right:10px;" onclick="fnGetPrevPosts();">Previous</button>
+				</div>
+			</div>
+		</div>
+
+	</body>
+
+	<script>
+		/*
+		** Display post from and hide posts list when user clicks on "Post" button in post form.
+		*/
+		function fnShowPostForm()
+		{
+			$("#FormDiv").show();
+			$("#PostsListDiv").hide();
+		}//fnShowPostForm
+
+		/*
+		** Display posts list and hide post form when user clicks on "Close" button in post form.
+		*/
+		function fnClosePostForm()
+		{
+			$("#FormDiv").hide();
+			$("#PostsListDiv").show();
+		}//fnClosePostForm
+
+		/*
+		** Post data in post form when user click on "Submit" button in post form.
+		*/
+		function fnPostData()
+		{
+			fetch('https://jsonplaceholder.typicode.com/posts', {
+				method: 'POST',
+				body: JSON.stringify({
+				  title: $("#title").val(),
+				  body: $("#body").val(),
+				  userId: 1
+				}),
+				headers: {
+				  "Content-type": "application/json; charset=UTF-8"
+				}
+			})
+			.then(response => response.json())
+			.then(json => fnAddRow(json))
+		}//fnPostData
+
+		/*
+		** After post form data, add the post to list, hide form and display posts list.
+		*/
+		function fnAddRow(vData)
+		{
+			var vRow = "";
+			if(vData)
+			{
+				vRow = "<tr>";
+				vRow += "<td>"+ vData.userId +"</td>";
+				vRow += "<td>"+ vData.id +"</td>"
+				vRow += "<td>"+ vData.title +"</td>";
+				vRow += "<td>"+ vData.body +"</td>";
+				vRow += "</tr>";
+
+				$("#PostsList tbody").append(vRow);
+			}
+			fnClosePostForm();
+		}//fnAddRow
+
+		/*
+		** Initial list starts from 0. You can change the value u required.
+		*/
+		var vGlbStartIndex = 0;
+
+		/*
+		** Per page displaying 10 posts. You can change the value u required.
+		*/
+		var vGlbOffSet = 10;
+
+		/*
+		** To get next posts of given offset.
+		*/
+		function fnGetNextPosts()
+		{
+			vGlbStartIndex += vGlbOffSet;
+			fnGetPosts();
+		}//fnGetNextPosts
+
+		/*
+		** To get previous posts of given offset.
+		*/
+		function fnGetPrevPosts()
+		{
+			vGlbStartIndex -= vGlbOffSet;
+			if(vGlbStartIndex <= 0)
+				vGlbStartIndex = 0;
+
+			fnGetPosts();
+		}
+
+		/*
+		** Actual call to get posts from server!
+		*/
+		function fnGetPosts()
+		{
+			var vUrl = "http://jsonplaceholder.typicode.com/posts?_start="+ vGlbStartIndex +"&_limit=" + vGlbOffSet;
+			
+			var data;
+			$.getJSON({
+				url: vUrl, data,
+				success: function(vPosts){
+					if(vPosts)
+					{
+						var vRows = "";
+						if(vPosts.length > 0)
+						{
+							for(var i = 0; i < vPosts.length; i++)
+							{
+								var vPost = vPosts[i];
+								vRows += "<tr>";
+								vRows += "<td>"+ vPost.userId +"</td>";
+								vRows += "<td>"+ vPost.id +"</td>"
+								vRows += "<td>"+ vPost.title +"</td>";
+								vRows += "<td>"+ vPost.body +"</td>";
+								vRows += "</tr>";
+							}
+						}
+						else
+						{
+							vRows = "<tr><td colspan='4' style='text-align:center;'>No data available</td></tr>";
+						}
+
+						$("#PostsList tbody").html(vRows);
+						$("#Summary").html("Showing <b>"+ vGlbOffSet +"</b> posts from <b>" + vGlbStartIndex +"</b>");
+					}
+				}
+			});
+
+		}//fnGetPosts
+
+		$(function(){
+			/*
+			** On page load, display initial list of the posts
+			*/
+			fnGetPosts();
+		});
+	</script>
+</html>
